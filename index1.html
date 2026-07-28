@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نقطة بيع - محلات الخير للأقمشة</title>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+  import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, onSnapshot, addDoc, orderBy, query, updateDoc, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+  // ══════════════════════════════════════════════
+  // 🔑 DO NOT CHANGE THIS BLOCK — DATABASE KEY
+  const firebaseConfig = {
+    apiKey: "AIzaSyDcJ8CKxm8uK5G3y7CjTS8zC2WnUm9VtN8",
+    authDomain: "alkhair-pos.firebaseapp.com",
+    projectId: "alkhair-pos",
+    storageBucket: "alkhair-pos.firebasestorage.app",
+    messagingSenderId: "364825384989",
+    appId: "1:364825384989:web:29664Sf3faf41ea80d4ef4"
+  };
+  // ══════════════════════════════════════════════
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    window._db = db;
+    window._fs = { collection, doc, setDoc, getDoc, deleteDoc, onSnapshot, addDoc, orderBy, query, updateDoc, serverTimestamp };
+    document.dispatchEvent(new Event('dbReady'));
+  } catch(e) {
+    document.dispatchEvent(new CustomEvent('dbError', { detail: e.message }));
+  }
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Amiri:wght@400;700&display=swap');
+:root {
+  --gold:#c9a84c;--gold-light:#e8cc7e;--dark:#1a1208;--dark2:#2d2010;--brown:#3d2b0f;
+  --cream:#fdf8ef;--cream2:#f5edd8;--green:#2d5a27;--green-light:#4a8c42;
+  --red:#8b1a1a;--text:#1a1208;--border:#c9a84c44;--shadow:0 4px 24px rgba(26,18,8,.13);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{
+  font-family:'Cairo',sans-serif;background:var(--cream);color:var(--text);
+  height:100%;direction:rtl;
+  overscroll-behavior:none;
+}
+/* Let only designated scroll containers scroll */
+.products-panel,.admin-section,.cart-items,.receipts-list{
+  overscroll-behavior:contain;
+}
+#loginScreen{
+  position:fixed;inset:0;z-index:1000;
+  background:linear-gradient(160deg,#1a1208 0%,#2d1a06 50%,#1a1208 100%);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+}
+.login-box{
+  background:#2a1e0e;
+  border:1px solid var(--gold);
+  border-radius:20px;
+  padding:40px 36px;
+  width:100%;max-width:400px;
+  box-shadow:0 0 60px rgba(201,168,76,.15), 0 20px 60px rgba(0,0,0,.5);
+  text-align:center;
+}
+.login-logo{
+  font-family:'Amiri',serif;font-size:52px;
+  color:var(--gold);
+  text-shadow:0 0 20px rgba(201,168,76,.4);
+  margin-bottom:4px;
+}
+.login-sub{color:var(--gold-light);font-size:14px;margin-bottom:32px;opacity:.85}
+.login-box select,.login-box input{
+  width:100%;padding:13px 16px;margin-bottom:14px;
+  background:#1a1208;
+  border:1px solid rgba(201,168,76,.5);
+  border-radius:10px;color:#fff;
+  font-family:'Cairo',sans-serif;font-size:15px;
+  text-align:right;outline:none;transition:all .2s;
+  -webkit-appearance:none;appearance:none;
+}
+.login-box input::placeholder{color:rgba(255,255,255,.35)}
+.login-box input:focus{border-color:var(--gold);background:#221608}
+.login-box select:focus{border-color:var(--gold);background:#221608}
+.login-box select option{background:#1a1208;color:#fff}
+.btn-login{
+  width:100%;padding:14px;
+  background:linear-gradient(135deg,var(--gold),var(--gold-light));
+  border:none;border-radius:10px;
+  font-family:'Cairo',sans-serif;font-size:17px;font-weight:700;
+  color:var(--dark);cursor:pointer;
+  transition:transform .15s,box-shadow .15s;margin-top:4px;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn-login:active{transform:scale(.97)}
+.login-err{color:#ff7070;font-size:13px;margin-top:10px;display:none}
+.db-status{font-size:12px;margin-top:14px;color:rgba(255,255,255,.5)}
+.db-status.ok{color:#7ecf78}.db-status.err{color:#ff7070}
+#app{
+  display:none;flex-direction:column;
+  position:fixed;inset:0;
+  overflow:hidden;
+}
+.topbar{background:linear-gradient(90deg,var(--dark) 0%,var(--brown) 100%);padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 16px rgba(0,0,0,.3);position:sticky;top:0;z-index:100;flex-shrink:0}
+.topbar-logo{font-family:'Amiri',serif;color:var(--gold);font-size:28px;display:flex;align-items:center;gap:10px}
+.topbar-logo span{font-family:'Cairo',sans-serif;font-size:13px;color:var(--gold-light);opacity:.8}
+.topbar-right{display:flex;align-items:center;gap:16px}
+.branch-badge{background:rgba(201,168,76,.15);border:1px solid var(--gold);color:var(--gold-light);padding:5px 14px;border-radius:20px;font-size:13px;font-weight:600}
+.user-badge{display:flex;align-items:center;gap:8px;color:#fff;font-size:13px}
+.user-avatar{width:34px;height:34px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--dark)}
+.btn-logout{background:rgba(139,26,26,.3);border:1px solid #8b1a1a;color:#ff9090;padding:6px 14px;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px}
+.sync-badge{display:flex;align-items:center;gap:5px;font-size:11px;color:#7ecf78}
+.sync-dot{width:7px;height:7px;background:#7ecf78;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.nav-tabs{background:var(--dark2);display:flex;gap:4px;padding:8px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0}
+.nav-tab{padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:rgba(255,255,255,.5);transition:all .2s;border:1px solid transparent}
+.nav-tab:hover{color:var(--gold-light)}
+.nav-tab.active{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold)}
+.nav-tab.admin-only{display:none}
+.main{display:flex;flex:1;overflow:hidden;min-height:0}
+.products-panel{flex:1;padding:20px;overflow-y:auto;overflow-x:hidden;background:var(--cream);min-height:0}
+.panel-header{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.panel-title{font-size:20px;font-weight:700;color:var(--dark);flex:1}
+.search-box{display:flex;align-items:center;background:#fff;border:1px solid var(--border);border-radius:10px;padding:0 14px;gap:8px;flex:1;max-width:320px}
+.search-box input{border:none;outline:none;font-family:'Cairo',sans-serif;font-size:14px;padding:10px 0;flex:1;background:transparent;color:var(--text);text-align:right}
+.cat-filter{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.cat-btn{padding:6px 16px;border-radius:20px;border:1px solid var(--border);background:#fff;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;color:var(--text);transition:all .2s}
+.cat-btn.active,.cat-btn:hover{background:var(--gold);border-color:var(--gold);color:var(--dark);font-weight:700}
+.products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:14px}
+.product-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 12px;cursor:pointer;transition:all .2s;text-align:center;position:relative;overflow:hidden}
+.product-card:hover{border-color:var(--gold);box-shadow:0 4px 20px rgba(201,168,76,.2);transform:translateY(-2px)}
+.product-card::before{content:'';position:absolute;top:0;right:0;left:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-light));opacity:0;transition:opacity .2s}
+.product-card:hover::before{opacity:1}
+.product-icon{font-size:32px;margin-bottom:6px}
+.product-name{font-size:13px;font-weight:700;color:var(--dark);margin-bottom:3px}
+.product-code{font-size:11px;color:#999;margin-bottom:6px}
+.product-price{font-size:15px;font-weight:700;color:var(--green)}
+.product-unit{font-size:11px;color:#888}
+.cart-panel{width:380px;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;box-shadow:-4px 0 20px rgba(0,0,0,.06);overflow:hidden;min-height:0}
+.cart-header{padding:14px 20px;border-bottom:1px solid var(--border);background:var(--dark);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.cart-title{font-size:16px;font-weight:700;color:var(--gold);display:flex;align-items:center;gap:10px}
+.cart-count{background:var(--gold);color:var(--dark);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.cart-close-btn{display:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px;font-family:'Cairo',sans-serif;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;line-height:1}
+.customer-section{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--cream2);flex-shrink:0}
+.customer-section label{font-size:11px;color:#888;display:block;margin-bottom:3px;font-weight:600}
+.customer-section input,.customer-section select{width:100%;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Cairo',sans-serif;font-size:13px;color:var(--text);background:#fff;outline:none;text-align:right;transition:border-color .2s;margin-bottom:6px}
+.customer-section input:focus,.customer-section select:focus{border-color:var(--gold)}
+.customer-section input.invalid{border-color:var(--red) !important;background:#fff5f5}
+.cart-items{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px 12px;min-height:0;overscroll-behavior:contain}
+.cart-empty{text-align:center;padding:30px 20px;color:#bbb;font-size:14px}
+.empty-icon{font-size:42px;margin-bottom:10px}
+.cart-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0e8d5;animation:slideIn .2s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+.ci-info{flex:1}
+.ci-name{font-size:12px;font-weight:700;color:var(--dark)}
+.ci-price{font-size:11px;color:var(--green);font-weight:600}
+.ci-qty{display:flex;align-items:center;gap:4px}
+.qty-btn{width:24px;height:24px;border:1px solid var(--border);border-radius:5px;background:var(--cream);cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .15s;color:var(--dark)}
+.qty-btn:hover{background:var(--gold);border-color:var(--gold)}
+.qty-input{width:44px;text-align:center;border:1px solid var(--border);border-radius:5px;padding:3px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--text)}
+.ci-total{font-size:12px;font-weight:700;color:var(--dark);min-width:50px;text-align:left}
+.ci-del{color:#ccc;cursor:pointer;font-size:15px;transition:color .15s}
+.ci-del:hover{color:var(--red)}
+.cart-footer{padding:12px 14px;border-top:1px solid var(--border);background:var(--cream2);flex-shrink:0}
+.total-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px;color:#666}
+.total-row.grand{font-size:19px;font-weight:900;color:var(--dark);border-top:2px solid var(--gold);margin-top:6px;padding-top:10px}
+.total-row.grand span:last-child{color:var(--green)}
+.discount-row{display:flex;gap:6px;margin:8px 0;align-items:center}
+.discount-row label{font-size:12px;color:#666;white-space:nowrap}
+.discount-row input{flex:1;border:1px solid var(--border);border-radius:7px;padding:5px 8px;font-family:'Cairo',sans-serif;font-size:13px;text-align:center;color:var(--text)}
+.btn-checkout{width:100%;padding:13px;background:linear-gradient(135deg,var(--green),var(--green-light));border:none;border-radius:12px;color:#fff;font-family:'Cairo',sans-serif;font-size:16px;font-weight:700;cursor:pointer;margin-top:10px;transition:transform .15s,box-shadow .15s}
+.btn-checkout:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(45,90,39,.35)}
+.btn-clear{width:100%;padding:8px;background:transparent;border:1px solid #ddd;border-radius:9px;color:#999;font-family:'Cairo',sans-serif;font-size:13px;cursor:pointer;margin-top:5px;transition:all .15s}
+.btn-clear:hover{border-color:var(--red);color:var(--red)}
+.page{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0}
+.page.active{display:flex}
+/* Override: POS page is a flex-row (products + cart side by side) */
+.page.main{flex-direction:row}
+.admin-section{padding:20px 24px;flex:1;overflow-y:auto;overflow-x:hidden;background:var(--cream);min-height:0}
+.section-title{font-size:20px;font-weight:700;color:var(--dark);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.admin-toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.btn-add{background:linear-gradient(135deg,var(--gold),var(--gold-light));border:none;border-radius:10px;padding:9px 20px;color:var(--dark);font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:transform .15s}
+.btn-add:hover{transform:translateY(-1px)}
+.btn-secondary{background:var(--cream2);border:1px solid var(--border);border-radius:10px;padding:9px 16px;color:var(--dark);font-family:'Cairo',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold)}
+.data-table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+.data-table th{background:var(--dark);color:var(--gold);padding:11px 14px;font-size:12px;text-align:right;font-weight:600}
+.data-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid #f0e8d5}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:var(--cream2)}
+.action-btns{display:flex;gap:5px;flex-wrap:wrap}
+.btn-edit,.btn-del{padding:4px 10px;border-radius:6px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:11px;border:none;transition:all .15s}
+.btn-edit{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid var(--gold)}
+.btn-edit:hover{background:var(--gold);color:var(--dark)}
+.btn-del{background:rgba(139,26,26,.1);color:var(--red);border:1px solid var(--red)}
+.btn-del:hover{background:var(--red);color:#fff}
+.modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(26,18,8,.7);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:18px;padding:28px 32px;width:500px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:modalIn .25s ease;max-height:90vh;overflow-y:auto}
+@keyframes modalIn{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:none}}
+.modal h3{font-size:19px;font-weight:700;color:var(--dark);margin-bottom:18px}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:5px}
+.form-group input,.form-group select,.form-group textarea{width:100%;border:1px solid #ddd;border-radius:10px;padding:9px 12px;font-family:'Cairo',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .2s;background:var(--cream);text-align:right}
+.form-group input:focus,.form-group select:focus{border-color:var(--gold)}
+.form-row{display:flex;gap:10px}
+.form-row .form-group{flex:1}
+.modal-btns{display:flex;gap:10px;margin-top:18px}
+.btn-save{flex:1;padding:11px;background:linear-gradient(135deg,var(--green),var(--green-light));border:none;border-radius:10px;color:#fff;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer}
+.btn-cancel{flex:1;padding:11px;background:var(--cream);border:1px solid #ddd;border-radius:10px;color:#777;font-family:'Cairo',sans-serif;font-size:14px;cursor:pointer}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.settings-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:20px}
+.settings-card h4{font-size:15px;font-weight:700;color:var(--dark);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.user-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f5f5f5}
+.user-row:last-child{border-bottom:none}
+.user-row-name{font-weight:700;color:var(--dark);font-size:13px}
+.user-row-branch{color:#888;font-size:11px}
+.btn-change-pass{background:rgba(201,168,76,.1);border:1px solid var(--gold);color:var(--gold);padding:4px 10px;border-radius:6px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:11px}
+.receipts-list{display:flex;flex-direction:column;gap:10px}
+.receipt-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all .2s}
+.receipt-card:hover{border-color:var(--gold);box-shadow:0 4px 16px rgba(201,168,76,.15)}
+.receipt-id{font-size:14px;font-weight:700;color:var(--dark)}
+.receipt-meta{font-size:11px;color:#888;margin-top:3px}
+.receipt-total{font-size:17px;font-weight:700;color:var(--green);white-space:nowrap;margin-right:12px}
+.btn-print{width:100%;padding:11px;background:linear-gradient(135deg,var(--dark),var(--brown));border:none;border-radius:10px;color:var(--gold);font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px}
+.r-store-name{font-family:'Amiri',serif;font-size:24px;font-weight:700;color:var(--dark)}
+.r-divider{border:none;border-top:1px dashed #bbb;margin:8px 0}
+.r-info-row{display:flex;justify-content:space-between;margin-bottom:3px;font-size:12px;color:#555;text-align:right}
+.r-items-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}
+.r-items-table th{background:var(--dark);color:var(--gold);padding:5px 7px;font-size:11px}
+.r-items-table td{padding:4px 7px;border-bottom:1px solid #f0e8d5}
+.r-total-row{display:flex;justify-content:space-between;padding:3px 0;font-size:13px}
+.r-grand-total{font-size:16px;font-weight:900;border-top:2px solid var(--gold);padding-top:7px;margin-top:4px;color:var(--green)}
+.loading-overlay{position:fixed;inset:0;z-index:2000;background:rgba(26,18,8,.85);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.loading-overlay.show{display:flex}
+.spinner{width:44px;height:44px;border:4px solid rgba(201,168,76,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--gold);font-size:15px}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--dark);color:var(--gold);padding:11px 26px;border-radius:30px;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+/* branch address list */
+.branch-addr-item{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.branch-addr-item input{flex:1;border:1px solid #ddd;border-radius:8px;padding:7px 10px;font-family:'Cairo',sans-serif;font-size:13px;color:var(--text);background:var(--cream);outline:none;text-align:right}
+.branch-addr-item input:focus{border-color:var(--gold)}
+.btn-icon{background:none;border:none;cursor:pointer;font-size:16px;padding:4px;transition:transform .15s}
+.btn-icon:hover{transform:scale(1.2)}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ═══════════════════════════════════════════════
+   MOBILE & TABLET — complete responsive rewrite
+   Strategy: bottom-tab navigation, full-screen views
+═══════════════════════════════════════════════ */
+
+/* Floating cart button — hidden by default, shown on mobile */
+.mobile-cart-btn{
+  display:none;
+  position:fixed;bottom:68px;left:50%;transform:translateX(-50%);
+  z-index:200;
+  background:linear-gradient(135deg,var(--green),var(--green-light));
+  color:#fff;border:none;border-radius:50px;
+  padding:11px 22px;font-family:'Cairo',sans-serif;
+  font-size:14px;font-weight:700;cursor:pointer;
+  box-shadow:0 4px 18px rgba(45,90,39,.5);
+  align-items:center;gap:8px;
+  white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;
+}
+.mobile-cart-badge{
+  background:#fff;color:var(--green);
+  border-radius:50%;width:24px;height:24px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:900;
+}
+
+/* Bottom navigation bar — mobile only */
+.mobile-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  height:60px;
+  background:var(--dark);
+  border-top:1px solid rgba(201,168,76,.2);
+  z-index:300;
+  align-items:stretch;
+}
+.mobile-nav-item{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:3px;cursor:pointer;
+  color:rgba(255,255,255,.4);
+  font-family:'Cairo',sans-serif;font-size:10px;
+  border:none;background:none;
+  -webkit-tap-highlight-color:transparent;
+  transition:color .15s;
+}
+.mobile-nav-item.active{color:var(--gold)}
+.mobile-nav-item .nav-icon{font-size:20px;line-height:1}
+.mobile-nav-item.admin-only{display:none}
+
+/* Cart backdrop */
+.cart-backdrop{
+  display:none;position:fixed;
+  top:0;left:0;right:0;
+  bottom:calc(85vh + 60px); /* only covers the area above the cart panel */
+  background:rgba(0,0,0,.55);z-index:140;
+}
+.cart-backdrop.show{display:block}
+
+/* Cart drag handle */
+.cart-handle{
+  display:none;justify-content:center;
+  padding:10px 0 6px;cursor:pointer;
+  flex-shrink:0;
+}
+.cart-handle::before{
+  content:'';width:44px;height:4px;
+  background:rgba(201,168,76,.4);border-radius:2px;
+}
+
+@media (max-width:900px){
+
+  /* ── BODY — no special treatment needed, #app is position:fixed ── */
+
+  /* ── LOGIN ── */
+  #loginScreen{padding:16px;align-items:center}
+  .login-box{
+    width:100%;max-width:420px;
+    padding:32px 22px;
+    border-radius:16px;
+  }
+  .login-logo{font-size:44px}
+  .login-box select,.login-box input{
+    font-size:16px; /* prevents iOS zoom */
+    padding:14px 14px;
+  }
+  .btn-login{font-size:16px;padding:15px}
+
+  /* ── TOPBAR ── */
+  .topbar{padding:0 12px;height:50px;flex-shrink:0}
+  .topbar-logo{font-size:19px}
+  .topbar-logo span{display:none}
+  .branch-badge{font-size:11px;padding:4px 10px}
+  .sync-badge{display:none}
+  .user-badge span{display:none}
+  .btn-logout{padding:5px 10px;font-size:11px}
+
+  /* ── TOP NAV TABS — hidden, replaced by bottom nav ── */
+  .nav-tabs{display:none}
+
+  /* ── SHOW BOTTOM NAV ── */
+  .mobile-nav{display:flex}
+  .mobile-nav-item.admin-show{display:flex}
+
+  /* ── MAIN — fill remaining space, single column ── */
+  .main,.page.main{
+    flex-direction:column;
+    overflow:hidden;
+    flex:1;
+    min-height:0;
+    position:relative;
+    padding-bottom:60px; /* room for fixed bottom nav */
+  }
+
+  /* ── PRODUCTS PANEL — full width, scrollable ── */
+  .products-panel{
+    width:100%;flex:1;
+    padding:10px 10px 140px 10px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior:contain;
+    min-height:0;
+  }
+  .panel-header{
+    position:sticky;top:0;
+    background:var(--cream);
+    z-index:50;
+    padding:8px 0 6px;
+    margin-bottom:8px;
+    gap:6px;
+  }
+  .panel-title{font-size:15px}
+  .search-box{max-width:100%;flex:1}
+  .search-box input{font-size:16px} /* prevent iOS zoom */
+  .cat-filter{
+    overflow-x:auto;flex-wrap:nowrap;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;padding-bottom:2px;
+    overscroll-behavior-x:contain;
+  }
+  .cat-filter::-webkit-scrollbar{display:none}
+  .cat-btn{flex-shrink:0;font-size:12px;padding:6px 14px}
+
+  /* ── PRODUCT CARDS ── */
+  .products-grid{
+    grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+    gap:10px;
+  }
+  .product-card{padding:12px 10px}
+  .product-icon{font-size:28px;margin-bottom:5px}
+  .product-name{font-size:12px}
+  .product-price{font-size:14px}
+
+  /* ── CART PANEL — slides up from bottom, swipe-to-dismiss supported ── */
+  .cart-panel{
+    position:fixed;
+    bottom:60px;left:0;right:0;
+    width:100% !important;
+    height:85vh;
+    max-height:85vh;
+    border-right:none;
+    border-top:2px solid var(--gold);
+    border-radius:20px 20px 0 0;
+    z-index:150;
+    transform:translateY(100%);
+    transition:transform .3s cubic-bezier(.4,0,.2,1);
+    box-shadow:0 -10px 40px rgba(0,0,0,.3);
+    overflow:hidden;
+    overscroll-behavior:contain;
+    touch-action:none;
+  }
+  .cart-panel.mobile-open{transform:translateY(0)}
+  .cart-panel.mobile-open .cart-items{touch-action:pan-y}
+  .cart-panel.mobile-open .cart-close-btn{display:flex}
+  .cart-handle{display:flex;touch-action:none;cursor:grab}
+
+  /* ── MOBILE CART BUTTON ── */
+  .mobile-cart-btn{display:flex;bottom:68px}
+
+  /* ── ADMIN PAGES ── */
+  .admin-section{padding:10px 12px 140px 12px;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+  .section-title{font-size:17px;margin-bottom:12px}
+  .admin-toolbar{gap:6px}
+  .btn-add,.btn-secondary{font-size:12px;padding:8px 14px}
+  .settings-grid{grid-template-columns:1fr;gap:12px}
+  .form-row{flex-direction:column;gap:0}
+
+  /* ── TABLES — horizontal scroll ── */
+  .data-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px;overscroll-behavior-x:contain}
+  .data-table{min-width:520px}
+
+  /* ── MODALS — slide up from bottom ── */
+  .modal-overlay{align-items:flex-end}
+  .modal{
+    width:100vw !important;
+    max-width:100vw !important;
+    border-radius:20px 20px 0 0;
+    position:relative;
+    margin:0;
+    padding:20px 16px 32px;
+    max-height:92vh;
+  }
+  .form-group input,.form-group select,.form-group textarea{
+    font-size:16px; /* prevent iOS zoom */
+  }
+
+  /* ── TOAST ── */
+  .toast{bottom:72px;font-size:13px;padding:10px 20px}
+
+  /* ── TOUCH TARGETS ── */
+  .qty-btn{width:32px;height:32px;font-size:17px}
+  .btn-checkout{padding:16px;font-size:16px;border-radius:14px}
+  .btn-clear{padding:10px;font-size:13px}
+  .ci-del{font-size:20px;padding:4px 8px}
+
+  /* Customer section inputs */
+  .customer-section input,
+  .customer-section select{font-size:16px;padding:10px 12px} /* prevent iOS zoom */
+}
+
+/* ── SMALL PHONES ── */
+@media (max-width:400px){
+  .products-grid{grid-template-columns:repeat(2,1fr)}
+  .topbar-logo{font-size:17px}
+  .mobile-cart-btn{font-size:13px;padding:12px 20px}
+}
+
+/* ── TABLET portrait ── */
+@media (min-width:601px) and (max-width:900px){
+  .products-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+  .cart-panel{height:75vh}
+}
+
+/* ── DESKTOP — ensure nothing overflows to a void ── */
+@media (min-width:901px){
+  .products-panel,.admin-section{
+    overscroll-behavior:contain;
+  }
+  /* Prevent horizontal swipe to void */
+  body{touch-action:pan-y}
+}
+</style>
+</head>
+<body>
+<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text" id="loadingText">جاري الاتصال...</div></div>
+
+<!-- Mobile cart backdrop -->
+<div class="cart-backdrop" id="cartBackdrop" onclick="closeCart()"></div>
+
+<!-- Mobile floating cart button -->
+<button class="mobile-cart-btn" id="mobileCartBtn" onclick="toggleCart()">
+  🛒 السلة
+  <div class="mobile-cart-badge" id="mobileCartBadge">0</div>
+</button>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">الخيـر</div>
+    <div class="login-sub">محلات الأقمشة والمفروشات</div>
+    <select id="loginUser"><option value="">اختر المستخدم</option></select>
+    <input type="password" id="loginPass" placeholder="كلمة المرور" />
+    <button class="btn-login" onclick="doLogin()">دخول</button>
+    <div class="login-err" id="loginErr">❌ بيانات خاطئة</div>
+    <div class="db-status" id="dbStatus">⏳ جاري الاتصال بقاعدة البيانات...</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo">الخيـر <span id="topBranch"></span></div>
+    <div class="topbar-right">
+      <div class="sync-badge"><div class="sync-dot"></div> متصل</div>
+      <div class="branch-badge" id="branchBadge"></div>
+      <div class="user-badge"><div class="user-avatar" id="userAvatar"></div><span id="userName"></span></div>
+      <button class="btn-logout" onclick="doLogout()">خروج</button>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="showPage('pos')" id="tab-pos">🛒 نقطة البيع</div>
+    <div class="nav-tab admin-only" onclick="showPage('products')" id="tab-products">📦 المنتجات</div>
+    <div class="nav-tab" onclick="showPage('receipts')" id="tab-receipts">🧾 الفواتير</div>
+    <div class="nav-tab admin-only" onclick="showPage('settings')" id="tab-settings">⚙️ الإعدادات</div>
+  </div>
+
+  <!-- POS PAGE -->
+  <div class="page active main" id="page-pos">
+    <div class="products-panel">
+      <div class="panel-header">
+        <div class="panel-title">🏪 المنتجات</div>
+        <div class="search-box"><span>🔍</span><input type="text" id="searchInput" placeholder="بحث..." oninput="filterProducts()" /></div>
+      </div>
+      <div class="cat-filter" id="catFilter"></div>
+      <div class="products-grid" id="productsGrid"></div>
+    </div>
+    <div class="cart-panel" id="cartPanel">
+      <div class="cart-handle" id="cartHandle"></div>
+      <div class="cart-header">
+        <div class="cart-title">🛒 سلة الشراء <div class="cart-count" id="cartCount">0</div></div>
+        <button class="cart-close-btn" onclick="closeCart()" id="cartCloseBtn">✕</button>
+      </div>
+      <div class="customer-section">
+        <label>👤 اسم العميل *</label>
+        <input type="text" id="custName" placeholder="مطلوب" />
+        <label>📞 رقم الهاتف * (11 رقم)</label>
+        <input type="tel" id="custPhone" placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
+        <label>🧑‍💼 البائع</label>
+        <select id="sellerSelect"><option value="">اختر البائع...</option></select>
+      </div>
+      <div class="cart-items" id="cartItems"><div class="cart-empty"><div class="empty-icon">🛍️</div><div>اضغط على منتج لإضافته</div></div></div>
+      <div class="cart-footer">
+        <div class="total-row"><span>الإجمالي</span><span id="subtotalDisp">0.00 ج.م</span></div>
+        <div class="discount-row"><label>خصم:</label><input type="number" id="discountInput" placeholder="0" min="0" oninput="updateTotals()" /><span>ج.م</span></div>
+        <div class="total-row grand"><span>الإجمالي النهائي</span><span id="grandTotalDisp">0.00 ج.م</span></div>
+        <button class="btn-checkout" onclick="checkout()">✅ إتمام البيع وطباعة الفاتورة</button>
+        <button class="btn-clear" onclick="clearCart()">🗑️ مسح السلة</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCTS PAGE -->
+  <div class="page" id="page-products">
+    <div class="admin-section">
+      <div class="section-title">📦 إدارة المنتجات</div>
+      <div class="admin-toolbar">
+        <button class="btn-add" onclick="openProductModal()">➕ إضافة منتج</button>
+        <button class="btn-secondary" onclick="exportCSV()">📥 تصدير CSV</button>
+      </div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>الكود</th><th>الاسم</th><th>الفئة</th><th>السعر</th><th>الوحدة</th><th>إجراءات</th></tr></thead><tbody id="productsTableBody"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- RECEIPTS PAGE -->
+  <div class="page" id="page-receipts">
+    <div class="admin-section">
+      <div class="section-title">🧾 سجل الفواتير</div>
+      <div class="admin-toolbar">
+        <button class="btn-secondary" onclick="exportReceiptsBackup()">💾 نسخة احتياطية JSON</button>
+        <button class="btn-secondary" onclick="exportReceiptsCSV()">📥 تصدير CSV</button>
+      </div>
+      <div class="receipts-list" id="receiptsList"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS PAGE -->
+  <div class="page" id="page-settings">
+    <div class="admin-section">
+      <div class="section-title">⚙️ الإعدادات</div>
+      <div class="settings-grid">
+        <div class="settings-card">
+          <h4>👥 إدارة المستخدمين</h4>
+          <div id="usersSettingsList"></div>
+        </div>
+        <div class="settings-card">
+          <h4>🏪 معلومات المحل</h4>
+          <div class="form-group"><label>اسم المحل</label><input type="text" id="settingStoreName" value="محلات الخير" /></div>
+          <div class="form-group">
+            <label>عناوين الفروع <button class="btn-icon" onclick="addBranchField()" title="إضافة فرع">➕</button></label>
+            <div id="branchAddresses"></div>
+          </div>
+          <button class="btn-save" style="width:100%;margin-top:8px" onclick="saveSettings()">💾 حفظ الإعدادات</button>
+        </div>
+        <div class="settings-card">
+          <h4>🧑‍💼 إدارة البائعين</h4>
+          <div id="sellersSettingsList"></div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <input type="text" id="newSellerInput" placeholder="اسم البائع الجديد" style="flex:1;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:'Cairo',sans-serif;font-size:13px;text-align:right" />
+            <button class="btn-add" onclick="addSeller()">➕ إضافة</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal">
+    <h3 id="productModalTitle">إضافة منتج جديد</h3>
+    <div class="form-row">
+      <div class="form-group"><label>اسم المنتج *</label><input type="text" id="pName" placeholder="قماش كتان" /></div>
+      <div class="form-group"><label>الكود *</label><input type="text" id="pCode" placeholder="F001" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>السعر (ج.م) *</label><input type="number" id="pPrice" placeholder="0.00" step="0.5" /></div>
+      <div class="form-group"><label>الوحدة</label><select id="pUnit"><option value="متر">متر</option><option value="قطعة">قطعة</option><option value="رول">رول</option><option value="كيلو">كيلو</option><option value="بكرة">بكرة</option><option value="يارده">يارده</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>الفئة</label><input type="text" id="pCategory" placeholder="أقمشة طبيعية" /></div>
+      <div class="form-group"><label>الرمز</label><input type="text" id="pIcon" placeholder="🧵" maxlength="4" /></div>
+    </div>
+    <div class="modal-btns"><button class="btn-save" onclick="saveProduct()">💾 حفظ</button><button class="btn-cancel" onclick="closeModal('productModal')">إلغاء</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="receiptModal">
+  <div class="modal" style="width:420px"><div id="receiptContent"></div>
+    <button class="btn-print" onclick="printReceipt()">🖨️ طباعة الفاتورة</button>
+    <button class="btn-cancel" style="width:100%;margin-top:8px" onclick="closeModal('receiptModal')">إغلاق</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="changePassModal">
+  <div class="modal">
+    <h3 id="changePassTitle">تغيير كلمة المرور</h3>
+    <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="newPass1" placeholder="6 أحرف على الأقل" /></div>
+    <div class="form-group"><label>تأكيد كلمة المرور</label><input type="password" id="newPass2" placeholder="أعد الإدخال" /></div>
+    <div class="modal-btns"><button class="btn-save" onclick="savePassword()">💾 حفظ</button><button class="btn-cancel" onclick="closeModal('changePassModal')">إلغاء</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addUserModal">
+  <div class="modal">
+    <h3>➕ إضافة مستخدم جديد</h3>
+    <div class="form-row">
+      <div class="form-group"><label>معرف الدخول * (إنجليزي)</label><input type="text" id="addUserId" placeholder="branch3" style="direction:ltr;text-align:left" /></div>
+      <div class="form-group"><label>الدور</label><select id="addUserRole"><option value="user">موظف</option><option value="admin">مدير</option></select></div>
+    </div>
+    <div class="form-group"><label>الاسم الكامل *</label><input type="text" id="addUserName" placeholder="موظف فرع المعادي" /></div>
+    <div class="form-group"><label>اسم الفرع * (يظهر في الفاتورة)</label><input type="text" id="addUserBranch" placeholder="فرع المعادي" /></div>
+    <div class="form-group"><label>كلمة المرور *</label><input type="password" id="addUserPass" placeholder="6 أحرف على الأقل" /></div>
+    <div class="modal-btns"><button class="btn-save" onclick="saveNewUser()">✅ إضافة</button><button class="btn-cancel" onclick="closeModal('addUserModal')">إلغاء</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- BOTTOM MOBILE NAV -->
+<nav class="mobile-nav" id="mobileNav">
+  <button class="mobile-nav-item active" id="mnav-pos" onclick="mobileShowPage('pos')">
+    <span class="nav-icon">🛒</span>البيع
+  </button>
+  <button class="mobile-nav-item" id="mnav-receipts" onclick="mobileShowPage('receipts')">
+    <span class="nav-icon">🧾</span>الفواتير
+  </button>
+  <button class="mobile-nav-item admin-only" id="mnav-products" onclick="mobileShowPage('products')">
+    <span class="nav-icon">📦</span>المنتجات
+  </button>
+  <button class="mobile-nav-item admin-only" id="mnav-settings" onclick="mobileShowPage('settings')">
+    <span class="nav-icon">⚙️</span>إعدادات
+  </button>
+</nav>
+
+<script>
+// ═══════════════════════════════════
+// STATE
+// ═══════════════════════════════════
+let currentUser=null,cart=[],products=[],receipts=[];
+let editingProductId=null,lastReceiptData=null,changingPassUserId=null,activeCategory='الكل';
+let unsubProducts=null,unsubReceipts=null;
+let settings={storeName:'محلات الخير',branches:[{name:'فرع ',addr:''},{name:'فرع ',addr:''}]};
+let sellers=[];
+
+function db(){return window._db}
+function fs(){return window._fs}
+
+// ═══════════════════════════════════
+// DB READY
+// ═══════════════════════════════════
+document.addEventListener('dbReady',async()=>{
+  document.getElementById('dbStatus').textContent='✅ متصل بقاعدة البيانات';
+  document.getElementById('dbStatus').className='db-status ok';
+  await loadUsers();
+  await loadSettingsFromDB();
+  await loadSellers();
+  refreshLoginDropdown();
+});
+document.addEventListener('dbError',e=>{
+  document.getElementById('dbStatus').textContent='❌ خطأ: '+e.detail;
+  document.getElementById('dbStatus').className='db-status err';
+});
+setTimeout(()=>{
+  if(document.getElementById('dbStatus').className==='db-status'){
+    document.getElementById('dbStatus').textContent='⚠️ تعذر الاتصال';
+    document.getElementById('dbStatus').className='db-status err';
+  }
+},10000);
+
+async function loadUsers(){
+  try{const{doc,getDoc}=fs();const s=await getDoc(doc(db(),'settings','users'));if(s.exists())USERS=s.data();}catch(e){}
+}
+async function loadSettingsFromDB(){
+  try{
+    const{doc,getDoc}=fs();const s=await getDoc(doc(db(),'settings','store'));
+    if(s.exists()){
+      const d=s.data();
+      settings.storeName=d.storeName||'محلات الخير';
+      // support both old format (azharAddr/krdasaAddr) and new branches array
+      if(d.branches)settings.branches=d.branches;
+      else if(d.azharAddr||d.krdasaAddr){
+        settings.branches=[{name:'فرع الأزهر',addr:d.azharAddr||''},{name:'فرع كرداسة',addr:d.krdasaAddr||''}];
+      }
+    }
+  }catch(e){}
+}
+async function loadSellers(){
+  try{const{doc,getDoc}=fs();const s=await getDoc(doc(db(),'settings','sellers'));if(s.exists()&&s.data().list)sellers=s.data().list;}catch(e){}
+}
+async function saveUsersToDB(){
+  try{const{doc,setDoc}=fs();await setDoc(doc(db(),'settings','users'),USERS);}catch(e){showToast('❌ خطأ في الحفظ');}
+}
+async function saveSettingsToDB(){
+  try{const{doc,setDoc}=fs();await setDoc(doc(db(),'settings','store'),{storeName:settings.storeName,branches:settings.branches});}catch(e){showToast('❌ خطأ');}
+}
+async function saveSellersToDB(){
+  try{const{doc,setDoc}=fs();await setDoc(doc(db(),'settings','sellers'),{list:sellers});}catch(e){showToast('❌ خطأ');}
+}
+
+function refreshLoginDropdown(){
+  const sel=document.getElementById('loginUser');const cur=sel.value;
+  sel.innerHTML='<option value="">اختر المستخدم</option>'+
+    Object.entries(USERS).map(([id,u])=>`<option value="${id}">${u.name}${u.role==='admin'?' 👑':''}</option>`).join('');
+  if(cur)sel.value=cur;
+}
+
+// ═══════════════════════════════════
+// AUTH
+// ═══════════════════════════════════
+async function doLogin(){
+  const userId=document.getElementById('loginUser').value;
+  const pass=document.getElementById('loginPass').value;
+  if(!window._db){showToast('⏳ انتظر الاتصال');return;}
+  const user=USERS[userId];
+  if(!user||user.pass!==pass){document.getElementById('loginErr').style.display='block';return;}
+  currentUser={...user,id:userId};
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  setupUI();
+  loadProducts();
+  loadReceipts();
+}
+document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+
+function doLogout(){
+  [unsubProducts,unsubReceipts].forEach(u=>{if(u)u()});
+  currentUser=null;cart=[];
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginPass').value='';
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginErr').style.display='none';
+}
+
+function setupUI(){
+  const u=currentUser;
+  document.getElementById('topBranch').textContent='• '+u.branch;
+  document.getElementById('branchBadge').textContent=u.branch;
+  document.getElementById('userName').textContent=u.name;
+  document.getElementById('userAvatar').textContent=u.name[0];
+  // Show admin-only items — flex for nav items, block for others
+  document.querySelectorAll('.admin-only').forEach(el=>{
+    if(el.classList.contains('mobile-nav-item'))
+      el.style.display=u.role==='admin'?'flex':'none';
+    else
+      el.style.display=u.role==='admin'?'block':'none';
+  });
+  if(u.role==='admin'){renderUsersSettings();loadSettingsToForm();renderSellersSettings();}
+  refreshSellerDropdown();
+  showPage('pos');
+}
+
+// ═══════════════════════════════════
+// DATA LOADING
+// ═══════════════════════════════════
+function loadProducts(){
+  try{
+    const{collection,onSnapshot}=fs();
+    if(unsubProducts)unsubProducts();
+    unsubProducts=onSnapshot(collection(db(),'products'),snap=>{
+      products=snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderProducts();renderCategories();renderProductsTable();
+    });
+  }catch(e){showToast('❌ '+e.message);}
+}
+
+function loadReceipts(){
+  try{
+    const{collection,onSnapshot,query,orderBy}=fs();
+    if(unsubReceipts)unsubReceipts();
+    const q=query(collection(db(),'receipts'),orderBy('timestamp','desc'));
+    unsubReceipts=onSnapshot(q,snap=>{
+      receipts=snap.docs.map(d=>{
+        const data={id:d.id,...d.data()};
+        if(data.timestamp&&typeof data.timestamp.toDate==='function'){
+          const dt=data.timestamp.toDate();
+          data.date=dt.toLocaleString('ar-EG',{
+            year:'numeric',month:'2-digit',day:'2-digit',
+            hour:'2-digit',minute:'2-digit',hour12:true
+          });
+        }
+        return data;
+      });
+      if(document.getElementById('page-receipts').classList.contains('active'))renderReceipts();
+    });
+  }catch(e){showToast('❌ '+e.message);}
+}
+
+// ═══════════════════════════════════
+// PAGES
+// ═══════════════════════════════════
+function showPage(page){
+  if(['products','settings'].includes(page)&&currentUser&&currentUser.role!=='admin'){
+    showToast('⛔ هذه الصفحة للمدير فقط');return;
+  }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  const pageEl=document.getElementById('page-'+page);
+  const tabEl=document.getElementById('tab-'+page);
+  if(pageEl)pageEl.classList.add('active');
+  if(tabEl)tabEl.classList.add('active');
+  if(page==='receipts')renderReceipts();
+  closeCart(); // always close cart when switching pages
+}
+
+// Mobile bottom-nav page switching
+function mobileShowPage(page){
+  showPage(page);
+  // Update bottom nav active state
+  document.querySelectorAll('.mobile-nav-item').forEach(el=>el.classList.remove('active'));
+  const mnavEl=document.getElementById('mnav-'+page);
+  if(mnavEl)mnavEl.classList.add('active');
+}
+
+// ═══════════════════════════════════
+// PRODUCTS
+// ═══════════════════════════════════
+function renderCategories(){
+  const cats=['الكل',...new Set(products.map(p=>p.category).filter(Boolean))];
+  document.getElementById('catFilter').innerHTML=cats.map(c=>`<div class="cat-btn ${c===activeCategory?'active':''}" onclick="setCategory('${c}')">${c}</div>`).join('');
+}
+function setCategory(cat){activeCategory=cat;renderCategories();renderProducts();}
+function filterProducts(){renderProducts();}
+
+function renderProducts(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const grid=document.getElementById('productsGrid');
+  const filtered=products.filter(p=>{
+    const mc=activeCategory==='الكل'||p.category===activeCategory;
+    const mq=!q||p.name.toLowerCase().includes(q)||(p.code||'').toLowerCase().includes(q);
+    return mc&&mq;
+  });
+  if(!filtered.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:#bbb">لا توجد منتجات</div>';return;}
+  grid.innerHTML=filtered.map(p=>{
+    return `<div class="product-card" onclick="addToCart('${p.id}')">
+      <div class="product-icon">${p.icon||'🧵'}</div>
+      <div class="product-name">${p.name}</div>
+      <div class="product-code">${p.code||''}</div>
+      <div class="product-price">${parseFloat(p.price).toFixed(2)} ج.م</div>
+      <div class="product-unit">/ ${p.unit}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════
+// CART
+// ═══════════════════════════════════
+function addToCart(id){
+  const p=products.find(x=>x.id===id);if(!p)return;
+  const ex=cart.find(i=>i.id===id);
+  if(ex)ex.qty+=1;
+  else cart.push({id,name:p.name,price:parseFloat(p.price),unit:p.unit,qty:1});
+  renderCart();showToast('✅ '+p.name);
+  // Auto-open cart panel on mobile
+  if(window.innerWidth<=768)openCart();
+}
+function removeFromCart(id){cart=cart.filter(i=>i.id!==id);renderCart();}
+function changeQty(id,delta){
+  const item=cart.find(i=>i.id===id);if(!item)return;
+  item.qty=Math.max(0.5,parseFloat((item.qty+delta).toFixed(1)));renderCart();
+}
+function updateQty(id,val){
+  const item=cart.find(i=>i.id===id);if(!item)return;
+  const v=parseFloat(val);if(isNaN(v)||v<=0){removeFromCart(id);return;}
+  item.qty=v;updateTotals();
+}
+function renderCart(){
+  document.getElementById('cartCount').textContent=cart.length;
+  document.getElementById('mobileCartBadge').textContent=cart.length;
+  const c=document.getElementById('cartItems');
+  if(!cart.length){c.innerHTML=`<div class="cart-empty"><div class="empty-icon">🛍️</div><div>اضغط على منتج لإضافته</div></div>`;updateTotals();return;}
+  c.innerHTML=cart.map(item=>`
+    <div class="cart-item">
+      <div class="ci-info"><div class="ci-name">${item.name}</div><div class="ci-price">${item.price.toFixed(2)} ج.م / ${item.unit}</div></div>
+      <div class="ci-qty">
+        <div class="qty-btn" onclick="changeQty('${item.id}',-0.5)">−</div>
+        <input class="qty-input" type="number" value="${item.qty}" min="0.1" step="0.5" onchange="updateQty('${item.id}',this.value)" />
+        <div class="qty-btn" onclick="changeQty('${item.id}',0.5)">+</div>
+      </div>
+      <div class="ci-total">${(item.price*item.qty).toFixed(2)}</div>
+      <div class="ci-del" onclick="removeFromCart('${item.id}')">✕</div>
+    </div>`).join('');
+  updateTotals();
+}
+function updateTotals(){
+  const sub=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const disc=parseFloat(document.getElementById('discountInput').value)||0;
+  const grand=Math.max(0,sub-disc);
+  document.getElementById('subtotalDisp').textContent=sub.toFixed(2)+' ج.م';
+  document.getElementById('grandTotalDisp').textContent=grand.toFixed(2)+' ج.م';
+}
+function clearCart(){
+  if(cart.length&&!confirm('هل تريد مسح السلة؟'))return;
+  cart=[];
+  document.getElementById('discountInput').value='';
+  document.getElementById('custName').value='';
+  document.getElementById('custPhone').value='';
+  document.getElementById('sellerSelect').value='';
+  renderCart();
+}
+
+// ═══════════════════════════════════
+// CHECKOUT — date comes from Firebase SERVER, not the user's machine
+// ═══════════════════════════════════
+async function checkout(){
+  if(!cart.length){showToast('⚠️ السلة فارغة!');return;}
+  const custName=document.getElementById('custName').value.trim();
+  const custPhone=document.getElementById('custPhone').value.trim();
+  const seller=document.getElementById('sellerSelect').value;
+  let valid=true;
+  if(!custName){document.getElementById('custName').classList.add('invalid');valid=false;}
+  else document.getElementById('custName').classList.remove('invalid');
+  if(custPhone.length!==11){document.getElementById('custPhone').classList.add('invalid');valid=false;}
+  else document.getElementById('custPhone').classList.remove('invalid');
+  if(!valid){showToast('⚠️ أدخل الاسم ورقم الهاتف (11 رقم)');return;}
+
+  const sub=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const disc=parseFloat(document.getElementById('discountInput').value)||0;
+  const grand=Math.max(0,sub-disc);
+
+  // ✅ serverTimestamp() is set by Firebase servers in Google's data center
+  // The user's machine clock has ZERO effect on this value
+  const{collection,addDoc,serverTimestamp}=fs();
+  const r={
+    timestamp: serverTimestamp(), // ← Google's clock, not the user's
+    branch:currentUser.branch,
+    cashier:currentUser.name,
+    cashierId:currentUser.id,
+    seller,
+    custName,custPhone,
+    items:[...cart],
+    subtotal:sub,discount:disc,grand
+  };
+
+  showLoading('جاري حفظ الفاتورة...');
+  try{
+    const ref=await addDoc(collection(db(),'receipts'),r);
+
+    // After saving, read the document back to get the real server timestamp
+    const{doc,getDoc}=fs();
+    const saved=await getDoc(doc(db(),'receipts',ref.id));
+    const savedData=saved.data();
+
+    // Convert Firebase Timestamp → Arabic formatted date string
+    const serverDate=savedData.timestamp.toDate();
+    const realDate=serverDate.toLocaleString('ar-EG',{
+      year:'numeric',month:'2-digit',day:'2-digit',
+      hour:'2-digit',minute:'2-digit',hour12:true
+    });
+
+    // Build the receipt object using the verified server date
+    const receiptForDisplay={
+      ...r,
+      id:ref.id,
+      date:realDate,       // ← date from Firebase server
+      timestamp:serverDate // ← actual Date object for display
+    };
+
+    lastReceiptData=receiptForDisplay;
+
+    hideLoading();closeCart();showReceiptModal(receiptForDisplay);clearCart();
+  }catch(e){hideLoading();showToast('❌ '+e.message);}
+}
+
+// ═══════════════════════════════════
+// RECEIPT DISPLAY & PRINT
+// ═══════════════════════════════════
+function getBranchAddr(branch){
+  const b=settings.branches.find(x=>x.name===branch);
+  return b?b.addr:'';
+}
+
+function buildReceiptHTML(r,forPrint=false){
+  const addr=getBranchAddr(r.branch);
+  const rows=r.items.map(i=>`<tr><td style="text-align:right;padding:4px">${i.name}</td><td style="text-align:center;padding:4px">${i.qty} ${i.unit}</td><td style="text-align:center;padding:4px">${parseFloat(i.price).toFixed(2)}</td><td style="text-align:center;padding:4px">${(i.price*i.qty).toFixed(2)}</td></tr>`).join('');
+  const w=forPrint?'300px':'100%';
+  return `<div style="width:${w};margin:0 auto;direction:rtl;text-align:center;font-family:'Cairo',sans-serif">
+    <div style="font-family:'Amiri',serif;font-size:${forPrint?'22':'24'}px;font-weight:900">${settings.storeName||'محلات الخير'}</div>
+    <div style="font-size:13px;color:#555">للأقمشة والمفروشات</div>
+    <div style="font-size:13px;font-weight:700;color:#c9a84c">${r.branch}</div>
+    ${addr?`<div style="font-size:11px;color:#888">${addr}</div>`:''}
+    <hr style="border:1px dashed #bbb;margin:8px 0"/>
+    <div style="text-align:right;font-size:12px">
+      <div style="display:flex;justify-content:space-between"><span>رقم الفاتورة:</span><span>${(r.id||'').slice(-8).toUpperCase()}</span></div>
+      <div style="display:flex;justify-content:space-between"><span>التاريخ:</span><span>${r.date}</span></div>
+      <div style="display:flex;justify-content:space-between"><span>الكاشير:</span><span>${r.cashier}</span></div>
+      ${r.seller?`<div style="display:flex;justify-content:space-between"><span>البائع:</span><span>${r.seller}</span></div>`:''}
+      <div style="display:flex;justify-content:space-between"><span>العميل:</span><span>${r.custName}</span></div>
+      <div style="display:flex;justify-content:space-between"><span>الهاتف:</span><span>${r.custPhone}</span></div>
+    </div>
+    <hr style="border:1px dashed #bbb;margin:8px 0"/>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:#1a1208;color:#c9a84c"><th style="padding:5px;text-align:right">المنتج</th><th style="padding:5px">الكمية</th><th style="padding:5px">السعر</th><th style="padding:5px">الإجمالي</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <hr style="border:1px dashed #bbb;margin:8px 0"/>
+    <div style="text-align:right;font-size:13px">
+      <div style="display:flex;justify-content:space-between"><span>المجموع:</span><span>${r.subtotal.toFixed(2)} ج.م</span></div>
+      ${r.discount>0?`<div style="display:flex;justify-content:space-between;color:red"><span>الخصم:</span><span>- ${r.discount.toFixed(2)} ج.م</span></div>`:''}
+      <div style="display:flex;justify-content:space-between;font-size:${forPrint?'15':'16'}px;font-weight:900;border-top:2px solid #c9a84c;margin-top:6px;padding-top:6px;color:#2d5a27"><span>الإجمالي:</span><span>${r.grand.toFixed(2)} ج.م</span></div>
+    </div>
+    <hr style="border:1px dashed #bbb;margin:8px 0"/>
+    <div style="font-size:12px;color:#999"><div>شكراً لتعاملكم معنا 🙏</div><div>نتشرف بخدمتكم دائماً</div></div>
+  </div>`;
+}
+
+function showReceiptModal(r){
+  document.getElementById('receiptContent').innerHTML=buildReceiptHTML(r,false);
+  document.getElementById('receiptModal').classList.add('open');
+}
+function printReceipt(){
+  const r=lastReceiptData;if(!r)return;
+  const pw=window.open('','_blank','width=400,height=700');
+  pw.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Amiri:wght@700&display=swap" rel="stylesheet">
+  <style>*{box-sizing:border-box}body{margin:0;background:#fff}</style>
+  </head><body onload="window.print();window.close()">${buildReceiptHTML(r,true)}</body></html>`);
+  pw.document.close();
+}
+
+// ═══════════════════════════════════
+// PRODUCTS ADMIN
+// ═══════════════════════════════════
+function renderProductsTable(){
+  const tbody=document.getElementById('productsTableBody');if(!tbody)return;
+  tbody.innerHTML=products.map(p=>`<tr>
+    <td><code style="background:#f5f5f5;padding:2px 6px;border-radius:5px">${p.code||''}</code></td>
+    <td><strong>${p.icon||'🧵'} ${p.name}</strong></td>
+    <td>${p.category||''}</td>
+    <td style="color:var(--green);font-weight:700">${parseFloat(p.price).toFixed(2)}</td>
+    <td>${p.unit}</td>
+    <td><div class="action-btns">
+      <button class="btn-edit" onclick="openProductModal('${p.id}')">✏️</button>
+      <button class="btn-del" onclick="deleteProduct('${p.id}')">🗑️</button>
+    </div></td></tr>`).join('');
+}
+
+function openProductModal(id=null){
+  editingProductId=id;
+  document.getElementById('productModalTitle').textContent=id?'تعديل المنتج':'إضافة منتج جديد';
+  if(id){
+    const p=products.find(x=>x.id===id);
+    document.getElementById('pName').value=p.name;
+    document.getElementById('pCode').value=p.code||'';
+    document.getElementById('pPrice').value=p.price;
+    document.getElementById('pUnit').value=p.unit;
+    document.getElementById('pCategory').value=p.category||'';
+    document.getElementById('pIcon').value=p.icon||'';
+  }else{
+    ['pName','pCode','pCategory'].forEach(f=>document.getElementById(f).value='');
+    document.getElementById('pPrice').value='';document.getElementById('pUnit').value='متر';document.getElementById('pIcon').value='🧵';
+  }
+  document.getElementById('productModal').classList.add('open');
+}
+
+async function saveProduct(){
+  const name=document.getElementById('pName').value.trim();
+  const code=document.getElementById('pCode').value.trim();
+  const price=parseFloat(document.getElementById('pPrice').value);
+  const unit=document.getElementById('pUnit').value;
+  const category=document.getElementById('pCategory').value.trim()||'عام';
+  const icon=document.getElementById('pIcon').value.trim()||'🧵';
+  if(!name||!code||isNaN(price)){showToast('⚠️ يرجى تعبئة الحقول الإلزامية');return;}
+  showLoading('جاري الحفظ...');
+  try{
+    const{doc,setDoc,collection,addDoc}=fs();
+    const data={name,code,price,unit,category,icon};
+    if(editingProductId)await setDoc(doc(db(),'products',editingProductId),data);
+    else await addDoc(collection(db(),'products'),data);
+    hideLoading();closeModal('productModal');showToast('✅ تم حفظ المنتج');
+  }catch(e){hideLoading();showToast('❌ '+e.message);}
+}
+
+async function deleteProduct(id){
+  if(!confirm('هل تريد حذف هذا المنتج؟'))return;
+  showLoading('جاري الحذف...');
+  try{const{doc,deleteDoc}=fs();await deleteDoc(doc(db(),'products',id));hideLoading();showToast('🗑️ تم الحذف');}
+  catch(e){hideLoading();showToast('❌ '+e.message);}
+}
+
+function exportCSV(){
+  const rows=[['الكود','الاسم','الفئة','السعر','الوحدة']];
+  products.forEach(p=>rows.push([p.code,p.name,p.category,p.price,p.unit]));
+  download('\uFEFF'+rows.map(r=>r.join(',')).join('\n'),'منتجات-الخير.csv','text/csv;charset=utf-8;');
+}
+
+// ═══════════════════════════════════
+// RECEIPTS
+// ═══════════════════════════════════
+function renderReceipts(){
+  const list=document.getElementById('receiptsList');if(!list)return;
+  const filtered=currentUser.role==='admin'?receipts:receipts.filter(r=>r.branch===currentUser.branch);
+  if(!filtered.length){list.innerHTML='<div style="text-align:center;color:#bbb;padding:40px">لا توجد فواتير بعد</div>';return;}
+  list.innerHTML=filtered.map(r=>`<div class="receipt-card" onclick="viewReceipt('${r.id}')">
+    <div style="flex:1">
+      <div class="receipt-id">🧾 ${(r.id||'').slice(-8).toUpperCase()}</div>
+      <div class="receipt-meta">📅 ${r.date} • 🏪 ${r.branch}${r.seller?' • 🧑‍💼 '+r.seller:''} • 👤 ${r.custName} • 📞 ${r.custPhone}</div>
+    </div>
+    <div class="receipt-total">${parseFloat(r.grand).toFixed(2)} ج.م</div>
+  </div>`).join('');
+}
+function viewReceipt(id){const r=receipts.find(x=>x.id===id);if(!r)return;lastReceiptData=r;showReceiptModal(r);}
+function exportReceiptsBackup(){
+  download(JSON.stringify({exportDate:new Date().toLocaleString('ar-EG'),totalReceipts:receipts.length,receipts},null,2),`backup-alkhair-${new Date().toISOString().slice(0,10)}.json`,'application/json');
+  showToast('✅ تم تحميل النسخة الاحتياطية');
+}
+function exportReceiptsCSV(){
+  const rows=[['رقم الفاتورة','التاريخ','الفرع','الكاشير','البائع','العميل','الهاتف','المجموع','الخصم','الإجمالي']];
+  receipts.forEach(r=>rows.push([(r.id||'').slice(-8).toUpperCase(),r.date,r.branch,r.cashier,r.seller||'',r.custName||'',r.custPhone||'',r.subtotal,r.discount,r.grand]));
+  download('\uFEFF'+rows.map(r=>r.join(',')).join('\n'),`فواتير-الخير-${new Date().toISOString().slice(0,10)}.csv`,'text/csv;charset=utf-8;');
+}
+
+// ═══════════════════════════════════
+// SELLERS
+// ═══════════════════════════════════
+function refreshSellerDropdown(){
+  const sel=document.getElementById('sellerSelect');if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">اختر البائع...</option>'+sellers.map(s=>`<option value="${s}">${s}</option>`).join('');
+  if(cur)sel.value=cur;
+}
+function renderSellersSettings(){
+  const list=document.getElementById('sellersSettingsList');if(!list)return;
+  list.innerHTML=sellers.length?sellers.map((s,i)=>`<div class="user-row"><div class="user-row-name">🧑‍💼 ${s}</div><button class="btn-change-pass" style="color:var(--red);border-color:var(--red)" onclick="deleteSeller(${i})">🗑️ حذف</button></div>`).join(''):'<div style="color:#bbb;font-size:13px;padding:10px 0">لا يوجد بائعون مضافون</div>';
+}
+async function addSeller(){
+  const name=document.getElementById('newSellerInput').value.trim();
+  if(!name){showToast('⚠️ أدخل اسم البائع');return;}
+  if(sellers.includes(name)){showToast('⚠️ هذا البائع موجود بالفعل');return;}
+  sellers.push(name);
+  await saveSellersToDB();
+  document.getElementById('newSellerInput').value='';
+  refreshSellerDropdown();
+  renderSellersSettings();
+  showToast('✅ تم إضافة البائع: '+name);
+}
+async function deleteSeller(i){
+  if(!confirm('حذف البائع: '+sellers[i]+'؟'))return;
+  sellers.splice(i,1);
+  await saveSellersToDB();
+  refreshSellerDropdown();
+  renderSellersSettings();
+  showToast('🗑️ تم الحذف');
+}
+
+// ═══════════════════════════════════
+// SETTINGS — branch addresses (mod 4: customizable)
+// ═══════════════════════════════════
+function loadSettingsToForm(){
+  document.getElementById('settingStoreName').value=settings.storeName||'محلات الخير';
+  renderBranchAddresses();
+}
+function renderBranchAddresses(){
+  const cont=document.getElementById('branchAddresses');if(!cont)return;
+  cont.innerHTML=settings.branches.map((b,i)=>`
+    <div class="branch-addr-item">
+      <input type="text" value="${b.name}" placeholder="اسم الفرع" oninput="settings.branches[${i}].name=this.value" style="width:120px;flex:none"/>
+      <input type="text" value="${b.addr}" placeholder="العنوان" oninput="settings.branches[${i}].addr=this.value"/>
+      <button class="btn-icon" onclick="removeBranch(${i})" title="حذف">🗑️</button>
+    </div>`).join('');
+}
+function addBranchField(){
+  settings.branches.push({name:'فرع جديد',addr:''});
+  renderBranchAddresses();
+}
+function removeBranch(i){
+  settings.branches.splice(i,1);
+  renderBranchAddresses();
+}
+async function saveSettings(){
+  settings.storeName=document.getElementById('settingStoreName').value.trim()||'محلات الخير';
+  await saveSettingsToDB();
+  showToast('✅ تم حفظ الإعدادات');
+}
+
+// ═══════════════════════════════════
+// USERS
+// ═══════════════════════════════════
+function renderUsersSettings(){
+  const list=document.getElementById('usersSettingsList');if(!list)return;
+  list.innerHTML=Object.entries(USERS).map(([id,u])=>`
+    <div class="user-row">
+      <div><div class="user-row-name">${u.name}</div><div class="user-row-branch">${u.branch} • ${u.role==='admin'?'👑 مدير':'👤 موظف'}</div></div>
+      <div style="display:flex;gap:5px">
+        <button class="btn-change-pass" onclick="openChangePass('${id}')">🔑</button>
+        ${id!=='admin'?`<button class="btn-change-pass" style="color:var(--red);border-color:var(--red)" onclick="deleteUser('${id}')">🗑️</button>`:''}
+      </div>
+    </div>`).join('')
+  +`<button class="btn-add" style="width:100%;margin-top:12px;justify-content:center" onclick="openAddUserModal()">➕ إضافة مستخدم</button>`;
+}
+function openAddUserModal(){
+  document.getElementById('addUserModal').classList.add('open');
+  ['addUserId','addUserName','addUserBranch','addUserPass'].forEach(f=>document.getElementById(f).value='');
+  document.getElementById('addUserRole').value='user';
+}
+async function saveNewUser(){
+  const id=document.getElementById('addUserId').value.trim().toLowerCase().replace(/\s/g,'');
+  const name=document.getElementById('addUserName').value.trim();
+  const branch=document.getElementById('addUserBranch').value.trim();
+  const role=document.getElementById('addUserRole').value;
+  const pass=document.getElementById('addUserPass').value;
+  if(!id||!name||!branch||!pass){showToast('⚠️ يرجى تعبئة جميع الحقول');return;}
+  if(pass.length<6){showToast('⚠️ كلمة المرور 6 أحرف على الأقل');return;}
+  if(USERS[id]){showToast('⚠️ هذا المعرف مستخدم بالفعل');return;}
+  USERS[id]={name,branch,role,pass};
+  await saveUsersToDB();refreshLoginDropdown();renderUsersSettings();
+  closeModal('addUserModal');showToast('✅ تم إضافة: '+name);
+}
+function openChangePass(userId){
+  changingPassUserId=userId;
+  document.getElementById('changePassTitle').textContent='تغيير كلمة مرور: '+USERS[userId].name;
+  document.getElementById('newPass1').value='';document.getElementById('newPass2').value='';
+  document.getElementById('changePassModal').classList.add('open');
+}
+async function savePassword(){
+  const p1=document.getElementById('newPass1').value;const p2=document.getElementById('newPass2').value;
+  if(!p1||p1.length<6){showToast('⚠️ كلمة المرور 6 أحرف على الأقل');return;}
+  if(p1!==p2){showToast('⚠️ كلمتا المرور غير متطابقتين');return;}
+  USERS[changingPassUserId].pass=p1;
+  await saveUsersToDB();closeModal('changePassModal');showToast('✅ تم تغيير كلمة المرور');
+}
+async function deleteUser(id){
+  if(!confirm('هل تريد حذف: '+USERS[id].name+'؟'))return;
+  delete USERS[id];
+  await saveUsersToDB();refreshLoginDropdown();renderUsersSettings();
+  showToast('🗑️ تم الحذف');
+}
+
+// ═══════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+function showLoading(msg){document.getElementById('loadingText').textContent=msg||'جاري...';document.getElementById('loadingOverlay').classList.add('show');}
+function hideLoading(){document.getElementById('loadingOverlay').classList.remove('show');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function download(content,filename,type){
+  const blob=new Blob([content],{type});const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=filename;a.click();
+}
+
+// ═══════════════════════════════════
+// MOBILE CART TOGGLE
+// ═══════════════════════════════════
+function toggleCart(){
+  const panel=document.getElementById('cartPanel');
+  if(panel.classList.contains('mobile-open'))closeCart();
+  else openCart();
+}
+function openCart(){
+  document.getElementById('cartPanel').classList.add('mobile-open');
+  document.getElementById('cartBackdrop').classList.add('show');
+}
+function closeCart(){
+  document.getElementById('cartPanel').classList.remove('mobile-open');
+  document.getElementById('cartBackdrop').classList.remove('show');
+}
+
+// ═══════════════════════════════════
+// SWIPE-TO-DISMISS CART (mobile)
+// ═══════════════════════════════════
+(function(){
+  const panel=document.getElementById('cartPanel');
+  const handle=document.getElementById('cartHandle');
+  let startY=0,startX=0,dragging=false;
+
+  function onTouchStart(e){
+    const items=document.getElementById('cartItems');
+    const fromHandle=handle&&handle.contains(e.target);
+    const itemsAtTop=items&&items.scrollTop===0;
+    if(!fromHandle&&!itemsAtTop)return;
+    startY=e.touches[0].clientY;
+    startX=e.touches[0].clientX;
+    dragging=true;
+    panel.style.transition='none';
+  }
+  function onTouchMove(e){
+    if(!dragging)return;
+    const dy=e.touches[0].clientY-startY;
+    const dx=e.touches[0].clientX-startX;
+    if(Math.abs(dx)>Math.abs(dy)){dragging=false;panel.style.transition='';return;}
+    if(dy<0)return;
+    e.preventDefault();
+    panel.style.transform=`translateY(${dy}px)`;
+  }
+  function onTouchEnd(e){
+    if(!dragging)return;
+    dragging=false;
+    panel.style.transition='';
+    const dy=e.changedTouches[0].clientY-startY;
+    if(dy>80)closeCart();
+    else panel.style.transform='';
+  }
+  panel.addEventListener('touchstart',onTouchStart,{passive:true});
+  panel.addEventListener('touchmove',onTouchMove,{passive:false});
+  panel.addEventListener('touchend',onTouchEnd,{passive:true});
+})();
+
+// ═══════════════════════════════════
+// PREVENT DESKTOP HORIZONTAL SWIPE → VOID
+// ═══════════════════════════════════
+(function(){
+  let startX=0,startY=0;
+  document.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;startY=e.touches[0].clientY;},{passive:true});
+  document.addEventListener('touchmove',e=>{
+    const dx=Math.abs(e.touches[0].clientX-startX);
+    const dy=Math.abs(e.touches[0].clientY-startY);
+    // On desktop-width viewports block horizontal swipes that could navigate
+    if(window.innerWidth>=901&&dx>dy&&dx>10)e.preventDefault();
+  },{passive:false});
+})();
+</script>
+</body>
+</html>
